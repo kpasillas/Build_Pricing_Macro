@@ -23,19 +23,21 @@ Sub buildPricingMacro()
         rootPath = GetFolder
 
         If rootPath = "" Then
+            
             MsgBox "Cancelled!"
+            
         Else
+            
             buildSeries
             exportToCSV
             originalWorksheet.Activate
             MsgBox "Done!"
+            
         End If
         
     End If
     
-    
     Application.ScreenUpdating = True
-    
 
 End Sub
 
@@ -62,10 +64,10 @@ Private Sub buildSeries()
 '********** For Debugging **********
 '    Debug.Print "buildSeries()"
 '    Dim i As Long, j As Long
-'    For i = 0 To (UBound(series.extensions) - LBound(series.extensions))
-'        Debug.Print "i: " & i, "Name: " & series.extensions(i).name
-'        For j = 0 To (UBound(series.extensions(i).categories) - LBound(series.extensions(i).categories))
-'            Debug.Print "j: " & j, "Name: " & series.extensions(i).categories()(j).name
+'    For i = 0 To (UBound(Series.extensions) - LBound(Series.extensions))
+'        Debug.Print "i: " & i, "Name: " & Series.extensions(i).name
+'        For j = 0 To (UBound(Series.extensions(i).categories) - LBound(Series.extensions(i).categories))
+'            Debug.Print "j: " & j, "Name: " & Series.extensions(i).categories()(j).name
 '        Next j
 '    Next i
 '***********************************
@@ -124,18 +126,28 @@ Private Function getExtensions() As Variant
     Workbooks("Build Pricing Macro").Worksheets("Extension Pricing").Activate
     Cells(1, 1).Activate
     
-'TODO: Add ability to handle multiple extensions - train, cruise, train + cruise, etc.
     Dim extensions() As New Extension
-    ReDim extensions(0)
+    extensions = getLandOnlyExtensions
+    ReDim Preserve extensions(UBound(extensions) + extensionDict.Count)
     
-    extensions(0).name = extensionDict(1)("Name")
-    extensions(0).dateOffset = extensionDict(1)("Date Offset")
-    extensions(0).categories = getCategories(extensions(0).dateOffset)
+    Dim i As Long
+    For i = 0 To (UBound(extensions) - LBound(extensions))
+    
+        If extensions(i).name = "" Then
+            
+            extensions(i).name = extensionDict(1)("Name")
+            extensions(i).dateOffset = extensionDict(1)("Date Offset")
+            
+        End If
+        
+        extensions(i).categories = getCategories(extensions(i).name, extensions(i).code, extensions(i).dateOffset)
+    
+    Next i
 
 
 '********** For Debugging **********
 '    Debug.Print "getExtensions()"
-'    Dim i As Long, j As Long
+'    Dim j As Long
 '    For i = 0 To (UBound(extensions) - LBound(extensions))
 '        Debug.Print "i: " & i, "Name: " & extensions(i).name
 '        For j = 0 To (UBound(extensions(i).categories) - LBound(extensions(i).categories))
@@ -150,7 +162,29 @@ Private Function getExtensions() As Variant
 End Function
 
 
-Private Function getCategories(dateOffset As Long) As Variant
+Private Function getLandOnlyExtensions() As Variant
+
+    originalWorksheet.Activate
+    Cells(1, 1).Activate
+    
+    Dim extensions() As New Extension
+    Dim i As Long
+    
+    Do While Cells(i + 3, 1).Value <> ""
+        ReDim Preserve extensions(i)
+        extensions(i).name = "Land Only " & i + 1
+        extensions(i).code = Cells(i + 3, 1).Value
+        extensions(i).dateOffset = 0
+        
+        i = i + 1
+    Loop
+    
+    getLandOnlyExtensions = extensions
+
+End Function
+
+
+Private Function getCategories(extensionName As String, extensionCode As String, dateOffset As Long) As Variant
 
     buildColumnsDict
     buildExtensionPricesDict
@@ -160,24 +194,36 @@ Private Function getCategories(dateOffset As Long) As Variant
     Cells(1, 1).Activate
     
     Dim categories() As New Category
-    ReDim categories(categoriesDict.Count - 1)
     Dim departuresWithoutExtensionPricing() As New Departure
     departuresWithoutExtensionPricing = getDeparturesWithoutExtensionCurrencyPrices(dateOffset)
-    Dim i As Long
-    i = 0
     
-    Dim key As Variant
-    For Each key In categoriesDict.Keys
-        categories(i).name = categoriesDict(key)("Name")
-        categories(i).code = categoriesDict(key)("Code")
-        categories(i).departures = getDepartures(categoriesDict(key)("Name"), departuresWithoutExtensionPricing)
+    If extensionName Like "Land Only*" Then
+    
+        ReDim categories(0)
         
-        i = i + 1
-    Next key
+        categories(0).name = "Land Only"
+        categories(0).code = extensionCode
+        categories(0).departures = departuresWithoutExtensionPricing
+    
+    Else
+    
+        ReDim categories(categoriesDict.Count - 1)
+        
+        Dim i As Long
+        Dim key As Variant
+        For Each key In categoriesDict.Keys
+            categories(i).name = categoriesDict(key)("Name")
+            categories(i).code = categoriesDict(key)("Code")
+            categories(i).departures = getDepartures(categoriesDict(key)("Name"), departuresWithoutExtensionPricing)
+            
+            i = i + 1
+        Next key
+        
+    End If
     
     
 '********** For Debugging **********
-'    Debug.Print "getCategories(" & dateOffset & ")"
+'    Debug.Print "getCategories(" & extensionName & ", " & extensionCode & ", " & dateOffset & ")"
 '    Dim j As Long
 '    For j = 0 To (UBound(categories) - LBound(categories))
 '        categories(j).printDebug
@@ -693,10 +739,21 @@ Private Sub exportToCSV()
             
                     startDate = Format(Series.extensions(i).categories()(j).departures()(l).startDate, "dd-mmm-yy")
                     code = Series.extensions(i).categories()(j).departures()(l).code
-                    singlePrice = Series.extensions(i).categories()(j).departures()(l).originalCurrencyPrices()(k).roomTypePrices.singlePrice + Series.extensions(i).categories()(j).departures()(l).extensionCurrencyPrices()(Series.extensions(i).categories()(j).departures()(0).originalCurrencyPrices()(k).code).roomTypePrices.singlePrice
                     twinPrice = Series.extensions(i).categories()(j).departures()(l).originalCurrencyPrices()(k).roomTypePrices.twinPrice
-                    triplePrice = Series.extensions(i).categories()(j).departures()(l).originalCurrencyPrices()(k).roomTypePrices.triplePrice + Abs(Series.extensions(i).categories()(j).departures()(l).extensionCurrencyPrices()(Series.extensions(i).categories()(j).departures()(0).originalCurrencyPrices()(k).code).roomTypePrices.triplePrice)
-                    childPrice = Series.extensions(i).categories()(j).departures()(l).originalCurrencyPrices()(k).roomTypePrices.childPrice + Abs(Series.extensions(i).categories()(j).departures()(l).extensionCurrencyPrices()(Series.extensions(i).categories()(j).departures()(0).originalCurrencyPrices()(k).code).roomTypePrices.childPrice)
+                    
+                    If Series.extensions(i).name Like "Land Only*" Then
+                    
+                        singlePrice = Series.extensions(i).categories()(j).departures()(l).originalCurrencyPrices()(k).roomTypePrices.singlePrice
+                        triplePrice = Series.extensions(i).categories()(j).departures()(l).originalCurrencyPrices()(k).roomTypePrices.triplePrice
+                        childPrice = Series.extensions(i).categories()(j).departures()(l).originalCurrencyPrices()(k).roomTypePrices.childPrice
+                    
+                    Else
+                        
+                        singlePrice = Series.extensions(i).categories()(j).departures()(l).originalCurrencyPrices()(k).roomTypePrices.singlePrice + Series.extensions(i).categories()(j).departures()(l).extensionCurrencyPrices()(Series.extensions(i).categories()(j).departures()(0).originalCurrencyPrices()(k).code).roomTypePrices.singlePrice
+                        triplePrice = Series.extensions(i).categories()(j).departures()(l).originalCurrencyPrices()(k).roomTypePrices.triplePrice + Abs(Series.extensions(i).categories()(j).departures()(l).extensionCurrencyPrices()(Series.extensions(i).categories()(j).departures()(0).originalCurrencyPrices()(k).code).roomTypePrices.triplePrice)
+                        childPrice = Series.extensions(i).categories()(j).departures()(l).originalCurrencyPrices()(k).roomTypePrices.childPrice + Abs(Series.extensions(i).categories()(j).departures()(l).extensionCurrencyPrices()(Series.extensions(i).categories()(j).departures()(0).originalCurrencyPrices()(k).code).roomTypePrices.childPrice)
+                    
+                    End If
                     
                     Write #fileNumber, startDate, code, singlePrice, twinPrice, triplePrice, "NA", childPrice
                     'Debug.Print "k: " & k, "l: " & l, startDate, code, singlePrice, twinPrice, triplePrice, "NA", childPrice
