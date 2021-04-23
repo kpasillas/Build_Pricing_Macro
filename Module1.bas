@@ -4,8 +4,8 @@ Dim departuresStartRow As Long, departuresEndRow As Long, extensionPricingStartR
 Dim rootPath As String
 Dim originalWorksheet As Worksheet, seriesDataWorksheet As Worksheet
 Dim Series As Series
-Dim rateBands As Scripting.Dictionary, landOnlyPricingRows As Scripting.Dictionary
-Dim rateBandsDict As Scripting.Dictionary, extensionDict As Scripting.Dictionary, categoriesDict As Scripting.Dictionary, buildColumnsDict As Scripting.Dictionary, landOnlyPricesDict As Scripting.Dictionary, extensionPricesDict As Scripting.Dictionary
+Dim rateBands As Scripting.Dictionary
+Dim rateBandsDict As Scripting.Dictionary, extensionDict As Scripting.Dictionary, categoriesDict As Scripting.Dictionary, columnsDict As Scripting.Dictionary, extensionPricesDict As Scripting.Dictionary
 
 
 Sub buildPricingMacro()
@@ -43,7 +43,6 @@ End Sub
 Private Sub buildSeries()
     
     getDeparturesStartAndEndRows
-    getLandOnlyPricingRows
     getExtensionPricingStartAndEndRows
     
     originalWorksheet.Activate
@@ -92,53 +91,6 @@ Private Sub getDeparturesStartAndEndRows()
             Exit For
         End If
     Next i
-
-End Sub
-
-
-Private Sub getLandOnlyPricingRows()
-
-    originalWorksheet.Activate
-    Cells(1, 1).Activate
-    
-    Set landOnlyPricingRows = New Scripting.Dictionary
-    
-    Dim i As Long
-    For i = 1 To 1000
-        
-        Select Case Cells(i, 1).Value
-        
-            Case "SGL01"
-                landOnlyPricingRows.Add "Single", i
-                If landOnlyPricingRows.Count = 3 Then
-                    Exit For
-                End If
-                
-            Case "TR01"
-                landOnlyPricingRows.Add "Triple", i
-                If landOnlyPricingRows.Count = 3 Then
-                    Exit For
-                End If
-                
-            Case "Young Traveller Discount"
-                landOnlyPricingRows.Add "Child", i
-                If landOnlyPricingRows.Count = 3 Then
-                    Exit For
-                End If
-                
-        End Select
-            
-    Next i
-    
-    
-'********** For Debugging **********
-'    Debug.Print "getLandOnlyPricingRows()"
-'    Dim key As Variant
-'    For Each key In landOnlyPricingRows.Keys
-'        Debug.Print "Key: " & key, "Row #: " & landOnlyPricingRows(key)
-'    Next key
-'***********************************
-
 
 End Sub
 
@@ -200,8 +152,7 @@ End Function
 
 Private Function getCategories(dateOffset As Long) As Variant
 
-    buildBuildColumnsDict
-    buildLandOnlyPricesDict
+    buildColumnsDict
     buildExtensionPricesDict
     
 '***** TODO: Get info from pricing worksheet once reformatted *****
@@ -263,11 +214,11 @@ Private Function getDeparturesWithoutExtensionCurrencyPrices(dateOffset As Long)
 '********** For Debugging **********
 '    Debug.Print "getDeparturesWithoutExtensionCurrencyPrices(" & dateOffset & ")"
 '    For i = 0 To (UBound(depArray) - LBound(depArray))
-'        Debug.Print "i: " & i, "Departure Code: " & depArray(i).code, "Start Date: " & depArray(i).startDate, "Rate Band ID: " & depArray(i).rateBandID'''
+'        Debug.Print "i: " & i, "Departure Code: " & depArray(i).code, "Start Date: " & depArray(i).startDate, "Rate Band ID: " & depArray(i).rateBandID
 '
 '        Dim j As Long
 '        For j = 0 To (UBound(depArray(i).originalCurrencyPrices) - LBound(depArray(i).originalCurrencyPrices))
-'            Debug.Print "j: " & j, "Currency Code: " & depArray(i).originalCurrencyPrices(j).code, "Twin: " & depArray(i).originalCurrencyPrices(j).roomTypePrices.twinPrice
+'            Debug.Print "j: " & j, "Currency Code: " & depArray(i).originalCurrencyPrices(j).code, "Twin: " & depArray(i).originalCurrencyPrices(j).roomTypePrices.twinPrice, "Single: " & depArray(i).originalCurrencyPrices(j).roomTypePrices.singlePrice, "Triple: " & depArray(i).originalCurrencyPrices(j).roomTypePrices.triplePrice, "Child: " & depArray(i).originalCurrencyPrices(j).roomTypePrices.childPrice
 '        Next j
 '    Next i
 '***********************************
@@ -351,12 +302,12 @@ Private Sub buildInfoDicts()
 End Sub
 
 
-Private Sub buildBuildColumnsDict()
+Private Sub buildColumnsDict()
 
     originalWorksheet.Activate
     Cells(1, 1).Activate
     
-    Set buildColumnsDict = New Scripting.Dictionary
+    Set columnsDict = New Scripting.Dictionary
     
     Dim currencyCodeArray(8) As String
     currencyCodeArray(0) = "AUD"
@@ -369,114 +320,53 @@ Private Sub buildBuildColumnsDict()
     currencyCodeArray(7) = "SIN"
     currencyCodeArray(8) = "USD"
     
-    Dim i As Long
+    Dim i As Long, j As Long
     For i = 0 To (UBound(currencyCodeArray) - LBound(currencyCodeArray))
         
-        Dim j As Long
         Do While j <= 1000
             j = j + 1
-            If Cells(departuresStartRow, j).Value = ("BUILD " & currencyCodeArray(i)) Then
-                buildColumnsDict.Add currencyCodeArray(i), j
-                Exit Do
-            End If
-        Loop
-        j = 0
-        
-    Next i
-
-
-'********** For Debugging **********
-'    Debug.Print "buildBuildColumnsDict()"
-'    Dim key As Variant
-'    For Each key In buildColumnsDict.Keys
-'        Debug.Print key, buildColumnsDict(key)
-'    Next key
-'***********************************
-
-
-End Sub
-
-
-Private Sub buildLandOnlyPricesDict()
-
-    originalWorksheet.Activate
-    Cells(1, 1).Activate
-    
-    Dim currencyCodeArray(6) As String
-    currencyCodeArray(0) = "AUD"
-    currencyCodeArray(1) = "CAD"
-    currencyCodeArray(2) = "EUR"
-    currencyCodeArray(3) = "GBP"
-    currencyCodeArray(4) = "NZD"
-    currencyCodeArray(5) = "SAR"
-    currencyCodeArray(6) = "USD"
-    
-    Dim brochureColumnsDict As New Scripting.Dictionary
-    
-    Dim i As Long
-    For i = 0 To (UBound(currencyCodeArray) - LBound(currencyCodeArray))
-        
-        Dim j As Long
-        Do While j <= 1000
-            j = j + 1
-            If Cells(departuresStartRow, j).Value = ("BROCHURE " & currencyCodeArray(i)) Then
-                brochureColumnsDict.Add currencyCodeArray(i), j
-                Exit Do
-            End If
-        Loop
-        j = 0
-        
-    Next i
-    
-    brochureColumnsDict.Add "GET", brochureColumnsDict("USD")
-    brochureColumnsDict.Add "SIN", brochureColumnsDict("USD")
-
-
-'********** For Debugging **********
-'    Debug.Print "buildLandOnlyPricesDict()"
-'    Dim debugKey As Variant
-'    For Each debugKey In brochureColumnsDict.Keys
-'        Debug.Print "Currency Code: " & debugKey, "Column: " & brochureColumnsDict(debugKey)
-'    Next debugKey
-'***********************************
-
-
-    Set landOnlyPricesDict = New Scripting.Dictionary
-    Dim supplementAndDiscountPrices As Prices
-
-    Dim bcKkey As Variant, ptKey As Variant
-    For Each bcKkey In brochureColumnsDict.Keys
-    
-        Set supplementAndDiscountPrices = New Prices
-        
-        For Each ptKey In landOnlyPricingRows.Keys
             
-            Select Case ptKey
+            Select Case Cells(departuresStartRow, j).Value
+            
+                Case "BUILD " & currencyCodeArray(i)
+                    columnsDict.Add "BUILD " & currencyCodeArray(i), j
                 
-                Case "Single"
-                    supplementAndDiscountPrices.singlePrice = Cells(landOnlyPricingRows(ptKey), brochureColumnsDict(bcKkey)).Value
-                
-                Case "Triple"
-                    supplementAndDiscountPrices.triplePrice = Cells(landOnlyPricingRows(ptKey), brochureColumnsDict(bcKkey)).Value
-                
-                Case "Child"
-                    supplementAndDiscountPrices.childPrice = Cells(landOnlyPricingRows(ptKey), brochureColumnsDict(bcKkey)).Value
+                Case "BROCHURE " & currencyCodeArray(i)
+                    columnsDict.Add "BROCHURE " & currencyCodeArray(i), j
+            
+                Case "SINGLE SUPP " & currencyCodeArray(i)
+                    columnsDict.Add "SINGLE SUPP " & currencyCodeArray(i), j
+                    
+                Case "TRIPLE DISC " & currencyCodeArray(i)
+                    columnsDict.Add "TRIPLE DISC " & currencyCodeArray(i), j
+                    
+                Case "YTD " & currencyCodeArray(i)
+                    columnsDict.Add "YTD " & currencyCodeArray(i), j
+                    Exit Do
             
             End Select
+            
+        Loop
+        j = 0
         
-        Next ptKey
-        
-        landOnlyPricesDict.Add bcKkey, supplementAndDiscountPrices
+    Next i
     
-    Next bcKkey
-    
-    
+    columnsDict.Add "BROCHURE GET", columnsDict("BROCHURE USD")
+    columnsDict.Add "SINGLE SUPP GET", columnsDict("SINGLE SUPP USD")
+    columnsDict.Add "TRIPLE DISC GET", columnsDict("TRIPLE DISC USD")
+    columnsDict.Add "YTD GET", columnsDict("YTD USD")
+    columnsDict.Add "BROCHURE SIN", columnsDict("BROCHURE USD")
+    columnsDict.Add "SINGLE SUPP SIN", columnsDict("SINGLE SUPP USD")
+    columnsDict.Add "TRIPLE DISC SIN", columnsDict("TRIPLE DISC USD")
+    columnsDict.Add "YTD SIN", columnsDict("YTD USD")
+
+
 '********** For Debugging **********
-'    Debug.Print "buildLandOnlyPricesDict()"
-'    Dim debugKey As Variant
-'    For Each debugKey In landOnlyPricesDict.Keys
-'        Debug.Print "Currency Code: " & debugKey, "Single: " & landOnlyPricesDict(debugKey).singlePrice, "Triple: " & landOnlyPricesDict(debugKey).triplePrice, "Child: " & landOnlyPricesDict(debugKey).childPrice
-'    Next debugKey
+'    Debug.Print "buildColumnsDict()"
+'    Dim key As Variant
+'    For Each key In columnsDict.Keys
+'        Debug.Print key, columnsDict(key)
+'    Next key
 '***********************************
 
 
@@ -638,21 +528,29 @@ Private Function getLandOnlyCurrencyPrices(currentRow As Long) As Variant
     Dim pricing(8) As New CurrencyPricing
     Dim roomTypePrice As Prices
     
+    Dim currencyCodeArray(8) As String
+    currencyCodeArray(0) = "AUD"
+    currencyCodeArray(1) = "CAD"
+    currencyCodeArray(2) = "EUR"
+    currencyCodeArray(3) = "GBP"
+    currencyCodeArray(4) = "GET"
+    currencyCodeArray(5) = "NZD"
+    currencyCodeArray(6) = "SAR"
+    currencyCodeArray(7) = "SIN"
+    currencyCodeArray(8) = "USD"
+    
     Dim i As Long
-    Dim key As Variant
-    For Each key In buildColumnsDict
+    For i = 0 To (UBound(currencyCodeArray) - LBound(currencyCodeArray))
         Set roomTypePrice = New Prices
         
-        pricing(i).code = key
-        roomTypePrice.twinPrice = Cells(currentRow, buildColumnsDict(key)).Value
-        roomTypePrice.singlePrice = landOnlyPricesDict(key).singlePrice
-        roomTypePrice.triplePrice = landOnlyPricesDict(key).triplePrice
-        roomTypePrice.childPrice = landOnlyPricesDict(key).childPrice
+        pricing(i).code = currencyCodeArray(i)
+        roomTypePrice.twinPrice = Cells(currentRow, columnsDict("BUILD " & currencyCodeArray(i))).Value
+        roomTypePrice.singlePrice = Cells(currentRow, columnsDict("SINGLE SUPP " & currencyCodeArray(i))).Value
+        roomTypePrice.triplePrice = Cells(currentRow, columnsDict("TRIPLE DISC " & currencyCodeArray(i))).Value
+        roomTypePrice.childPrice = Cells(currentRow, columnsDict("YTD " & currencyCodeArray(i))).Value
         
         Set pricing(i).roomTypePrices = roomTypePrice
-        
-        i = i + 1
-    Next key
+    Next i
 
 
 '********** For Debugging **********
