@@ -245,12 +245,26 @@ Private Function getDeparturesWithoutExtensionCurrencyPrices(dateOffset As Long)
     Dim depArray() As New Departure
     ReDim depArray(departuresEndRow - departuresStartRow - 1)
     
-    Dim i As Long
-    For i = 0 To (UBound(depArray) - LBound(depArray))
-        depArray(i).code = Cells(departuresStartRow + 1 + i, 1).Value
-        depArray(i).startDate = Cells(departuresStartRow + 1 + i, 2).Value
-        depArray(i).originalCurrencyPrices = getLandOnlyCurrencyPrices(departuresStartRow + 1 + i)
-        depArray(i).rateBandID = getRateBand(Cells(departuresStartRow + 1 + i, 2).Value + dateOffset)
+    Dim i As Long, j As Long
+    For i = (departuresStartRow + 1) To departuresEndRow
+        
+        If Cells(i, 5).Value = "CIRCLE(Stampede)" Then
+        
+            ReDim Preserve depArray(UBound(depArray) - 1)
+        
+'TODO: Figure out how to handle Stampede departures separately, filter out for now.
+        
+        Else
+        
+            depArray(j).code = Cells(i, 1).Value
+            depArray(j).startDate = Cells(i, 2).Value
+            depArray(j).originalCurrencyPrices = getLandOnlyCurrencyPrices(i)
+            depArray(j).rateBandID = getRateBand(Cells(i, 2).Value + dateOffset)
+            
+            j = j + 1
+            
+        End If
+        
     Next i
     
 
@@ -259,7 +273,6 @@ Private Function getDeparturesWithoutExtensionCurrencyPrices(dateOffset As Long)
 '    For i = 0 To (UBound(depArray) - LBound(depArray))
 '        Debug.Print "i: " & i, "Departure Code: " & depArray(i).code, "Start Date: " & depArray(i).startDate, "Rate Band ID: " & depArray(i).rateBandID
 '
-'        Dim j As Long
 '        For j = 0 To (UBound(depArray(i).originalCurrencyPrices) - LBound(depArray(i).originalCurrencyPrices))
 '            Debug.Print "j: " & j, "Currency Code: " & depArray(i).originalCurrencyPrices(j).code, "Twin: " & depArray(i).originalCurrencyPrices(j).roomTypePrices.twinPrice, "Single: " & depArray(i).originalCurrencyPrices(j).roomTypePrices.singlePrice, "Triple: " & depArray(i).originalCurrencyPrices(j).roomTypePrices.triplePrice, "Child: " & depArray(i).originalCurrencyPrices(j).roomTypePrices.childPrice
 '        Next j
