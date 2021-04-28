@@ -107,6 +107,7 @@ Private Sub getExtensionPricingStartAndEndRows()
     
     Dim i As Long
     For i = 1 To 1000
+        
         If Cells(i, 1).Value = "Series" Then
             extensionPricingStartRow = i
         ElseIf (Cells(i, 1).Value = "" And extensionPricingStartRow <> 0) Then
@@ -195,13 +196,10 @@ Private Function getCategories(extensionName As String, extensionCode As String,
     departuresWithoutExtensionPricing = getDeparturesWithoutExtensionCurrencyPrices(dateOffset)
     
     If extensionName Like "Land Only*" Then
-    
         ReDim categories(0)
-        
         categories(0).name = "Land Only"
         categories(0).code = extensionCode
         categories(0).departures = departuresWithoutExtensionPricing
-    
     Else
     
         ReDim categories(categoriesDict.Count - 1)
@@ -211,7 +209,7 @@ Private Function getCategories(extensionName As String, extensionCode As String,
         For Each key In categoriesDict.Keys
             categories(i).name = categoriesDict(key)("Name")
             categories(i).code = categoriesDict(key)("Code")
-            categories(i).departures = getDepartures(categoriesDict(key)("Name"), departuresWithoutExtensionPricing)
+            categories(i).departures = getDeparturesWithExtensionCurrencyPrices(categoriesDict(key)("Name"), departuresWithoutExtensionPricing)
             
             i = i + 1
         Next key
@@ -261,6 +259,12 @@ Private Function getDeparturesWithoutExtensionCurrencyPrices(dateOffset As Long)
             depArray(j).originalCurrencyPrices = getLandOnlyCurrencyPrices(i)
             depArray(j).rateBandID = getRateBand(Cells(i, 2).Value + dateOffset)
             
+            If Cells(i, 9).Value Like "No*" Then
+                depArray(j).extensionOffered = False
+            Else
+                depArray(j).extensionOffered = True
+            End If
+            
             j = j + 1
             
         End If
@@ -271,7 +275,7 @@ Private Function getDeparturesWithoutExtensionCurrencyPrices(dateOffset As Long)
 '********** For Debugging **********
 '    Debug.Print "getDeparturesWithoutExtensionCurrencyPrices(" & dateOffset & ")"
 '    For i = 0 To (UBound(depArray) - LBound(depArray))
-'        Debug.Print "i: " & i, "Departure Code: " & depArray(i).code, "Start Date: " & depArray(i).startDate, "Rate Band ID: " & depArray(i).rateBandID
+'        Debug.Print "i: " & i, "Departure Code: " & depArray(i).code, "Start Date: " & depArray(i).startDate, "Extension Offered: " & depArray(i).extensionOffered, "Rate Band ID: " & depArray(i).rateBandID
 '
 '        For j = 0 To (UBound(depArray(i).originalCurrencyPrices) - LBound(depArray(i).originalCurrencyPrices))
 '            Debug.Print "j: " & j, "Currency Code: " & depArray(i).originalCurrencyPrices(j).code, "Twin: " & depArray(i).originalCurrencyPrices(j).roomTypePrices.twinPrice, "Single: " & depArray(i).originalCurrencyPrices(j).roomTypePrices.singlePrice, "Triple: " & depArray(i).originalCurrencyPrices(j).roomTypePrices.triplePrice, "Child: " & depArray(i).originalCurrencyPrices(j).roomTypePrices.childPrice
@@ -344,8 +348,7 @@ Private Sub buildInfoDicts()
 
 '********** For Debugging **********
 '    Debug.Print "buildInfoDicts()"
-'    Dim outerKey As Variant
-'    Dim innerKey As Variant
+'    Dim outerKey As Variant, innerKey As Variant
 '    For Each outerKey In rateBandsDict.Keys
 '        Debug.Print outerKey
 '        For Each innerKey In rateBandsDict(outerKey).Keys
@@ -528,8 +531,7 @@ Private Sub buildExtensionPricesDict()
     
 '********** For Debugging **********
 '    Debug.Print "buildExtensionPricesDict()"
-'    Dim outerKey As Variant
-'    Dim innerKey As Variant
+'    Dim outerKey As Variant, innerKey As Variant
 '    For Each outerKey In extensionPricesDict.Keys
 '        Debug.Print "Category: " & outerKey
 '        For Each innerKey In extensionPricesDict(outerKey).Keys
@@ -607,18 +609,31 @@ Private Function getRateBand(departureDate As Date) As Long
 End Function
 
 
-Private Function getDepartures(extensionName As Variant, departures As Variant) As Variant
+Private Function getDeparturesWithExtensionCurrencyPrices(extensionName As Variant, departures As Variant) As Variant
 
     Dim depArray() As New Departure
     ReDim depArray(UBound(departures))
     
-    Dim i As Long
-    For i = 0 To (UBound(depArray) - LBound(depArray))
-        depArray(i).extensionCurrencyPrices = getExtensionCurrencyPrices(extensionName, departures(i).rateBandID)
-        depArray(i).code = departures(i).code
-        depArray(i).startDate = departures(i).startDate
-        depArray(i).rateBandID = departures(i).rateBandID
-        depArray(i).originalCurrencyPrices = departures(i).originalCurrencyPrices
+    Dim i As Long, j As Long
+    For i = 0 To (UBound(departures) - LBound(departures))
+        
+        If departures(i).extensionOffered = True Then
+        
+            depArray(j).extensionCurrencyPrices = getExtensionCurrencyPrices(extensionName, departures(i).rateBandID)
+            depArray(j).code = departures(i).code
+            depArray(j).startDate = departures(i).startDate
+            depArray(j).extensionOffered = departures(i).extensionOffered
+            depArray(j).rateBandID = departures(i).rateBandID
+            depArray(j).originalCurrencyPrices = departures(i).originalCurrencyPrices
+            
+            j = j + 1
+            
+        Else
+        
+            ReDim Preserve depArray(UBound(depArray) - 1)
+        
+        End If
+            
     Next i
 
 
@@ -634,7 +649,7 @@ Private Function getDepartures(extensionName As Variant, departures As Variant) 
 '***********************************
     
     
-    getDepartures = depArray
+    getDeparturesWithExtensionCurrencyPrices = depArray
 
 End Function
 
@@ -646,6 +661,7 @@ Private Function getExtensionCurrencyPrices(extensionName As Variant, rateBandID
     
     Dim i As Long
     For i = 0 To (UBound(extensionPricesDict(extensionName)(rateBandID)) - LBound(extensionPricesDict(extensionName)(rateBandID)))
+        
         Set roomTypePrice = New Prices
         
         roomTypePrice.twinPrice = extensionPricesDict(extensionName)(rateBandID)(i).roomTypePrices.twinPrice
@@ -655,6 +671,7 @@ Private Function getExtensionCurrencyPrices(extensionName As Variant, rateBandID
         
         pricing(i).code = extensionPricesDict(extensionName)(rateBandID)(i).code
         Set pricing(i).roomTypePrices = roomTypePrice
+        
     Next i
     
     

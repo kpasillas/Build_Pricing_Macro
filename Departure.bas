@@ -3,6 +3,7 @@
 Public code As String
 Public startDate As Date
 Private originalCurrencyPrices_ As Variant
+Public extensionOffered As Boolean
 Public rateBandID As Long
 Private extensionCurrencyPrices_ As Scripting.Dictionary
 
