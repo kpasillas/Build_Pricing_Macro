@@ -2,7 +2,7 @@ Option Explicit
 
 Dim departuresStartRow As Long, departuresEndRow As Long
 Dim rootPath As String
-Dim originalWorksheet As Worksheet, seriesDataWorksheet As Worksheet
+Dim originalWorksheet As Worksheet, currentWorksheet As Worksheet, seriesDataWorksheet As Worksheet
 Dim Series As Series
 Dim rateBands As Scripting.Dictionary
 Dim rateBandsDict As Scripting.Dictionary, extensionDict As Scripting.Dictionary, categoriesDict As Scripting.Dictionary, columnsDict As Scripting.Dictionary, extensionPricesDict As Scripting.Dictionary
@@ -18,8 +18,6 @@ Sub buildPricingMacro()
     
     Else
         
-        Set originalWorksheet = Application.ActiveSheet
-        
         rootPath = GetFolder
 
         If rootPath = "" Then
@@ -28,8 +26,23 @@ Sub buildPricingMacro()
             
         Else
             
-            buildSeries
-            exportToCSV
+            rootPath = rootPath & "\" & "Pricing Files - " & Format(Now, "dd-mmm-yy hh.mm.ss")
+            MkDir rootPath
+            Set originalWorksheet = Application.ActiveSheet
+            
+            Dim ws As Worksheet
+            For Each ws In ActiveWorkbook.Worksheets
+                
+                If ws.name Like "*(PRC)" Then
+                
+                    Set currentWorksheet = ws
+                    buildSeries
+                    exportToCSV
+                
+                End If
+                
+            Next ws
+            
             originalWorksheet.Activate
             MsgBox "Done!"
             
@@ -46,8 +59,7 @@ Private Sub buildSeries()
     
     getDeparturesStartAndEndRows
     
-    originalWorksheet.Activate
-    Cells(1, 1).Activate
+    currentWorksheet.Activate
     
     Set Series = New Series
     Series.name = UCase(Cells(1, 1).Value)
@@ -77,8 +89,7 @@ End Sub
 
 Private Sub getDeparturesStartAndEndRows()
 
-    originalWorksheet.Activate
-    Cells(1, 1).Activate
+    currentWorksheet.Activate
     
     departuresStartRow = 0
     departuresEndRow = 0
@@ -98,8 +109,7 @@ End Sub
 
 Private Function getExtensions() As Variant
 
-    originalWorksheet.Activate
-    Cells(1, 1).Activate
+    currentWorksheet.Activate
     
     Dim extensions() As New Extension
     extensions = getLandOnlyExtensions
@@ -139,8 +149,7 @@ End Function
 
 Private Function getLandOnlyExtensions() As Variant
 
-    originalWorksheet.Activate
-    Cells(1, 1).Activate
+    currentWorksheet.Activate
     
     Dim extensions() As New Extension
     Dim i As Long
@@ -164,8 +173,7 @@ Private Function getCategories(extensionName As String, extensionCode As String,
     buildColumnsDict
     buildExtensionPricesDict
     
-    originalWorksheet.Activate
-    Cells(1, 1).Activate
+    currentWorksheet.Activate
     
     Dim categories() As New Category
     Dim departuresWithoutExtensionPricing() As New Departure
@@ -215,8 +223,7 @@ End Function
 
 Private Function getDeparturesWithoutExtensionCurrencyPrices(dateOffset As Long) As Variant
     
-    originalWorksheet.Activate
-    Cells(1, 1).Activate
+    currentWorksheet.Activate
     
     Dim depArray() As New Departure
     ReDim depArray(departuresEndRow - departuresStartRow - 1)
@@ -270,7 +277,6 @@ End Function
 Private Sub buildInfoDicts()
 
     seriesDataWorksheet.Activate
-    Cells(1, 1).Activate
 
     Set rateBandsDict = New Scripting.Dictionary
     Set extensionDict = New Scripting.Dictionary
@@ -341,8 +347,7 @@ End Sub
 
 Private Sub buildColumnsDict()
 
-    originalWorksheet.Activate
-    Cells(1, 1).Activate
+    currentWorksheet.Activate
     
     Set columnsDict = New Scripting.Dictionary
     
@@ -408,14 +413,12 @@ End Sub
 Private Sub buildExtensionPricesDict()
 
     Dim ws As Worksheet
-    For Each ws In originalWorksheet.Parent.Worksheets
+    For Each ws In currentWorksheet.Parent.Worksheets
         If ws.name Like "Rocky Mountaineer-*" Then
             ws.Activate
             Exit For
         End If
     Next ws
-    
-    Cells(1, 1).Activate
     
     Dim currencyCodeArray() As String
     ReDim currencyCodeArray(10)
@@ -701,15 +704,7 @@ Private Sub exportToCSV()
     Dim i As Long, j As Long, k As Long, l As Long
     
     tripNameFolderPath = rootPath & "\" & Series.name
-    For i = 1 To 100
-        If Dir(tripNameFolderPath & duplicateFileExtension, vbDirectory) = "" Then
-            tripNameFolderPath = tripNameFolderPath & duplicateFileExtension
-            MkDir tripNameFolderPath
-            Exit For
-        Else
-            duplicateFileExtension = "(" & i & ")"
-        End If
-    Next i
+    MkDir tripNameFolderPath
     
     For i = 0 To (UBound(Series.extensions) - LBound(Series.extensions))
         
@@ -793,8 +788,13 @@ End Function
 
 Private Function getProductCodeAndSellingOffice(opCode As String) As Scripting.Dictionary
 
-    Workbooks("Build Pricing Macro").Worksheets("TT Codes").Activate
-    Cells(1, 1).Activate
+    Dim ws As Worksheet
+    For Each ws In seriesDataWorksheet.Parent.Worksheets
+        If ws.name Like "*Codes" Then
+            ws.Activate
+            Exit For
+        End If
+    Next ws
     
     Dim productCodeAndSellingOfficeDict As New Scripting.Dictionary
     Dim codesDict As Scripting.Dictionary
