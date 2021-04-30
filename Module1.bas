@@ -1,6 +1,6 @@
 Option Explicit
 
-Dim departuresStartRow As Long, departuresEndRow As Long, extensionPricingStartRow As Long, extensionPricingEndRow As Long
+Dim departuresStartRow As Long, departuresEndRow As Long
 Dim rootPath As String
 Dim originalWorksheet As Worksheet, seriesDataWorksheet As Worksheet
 Dim Series As Series
@@ -45,14 +45,13 @@ End Sub
 Private Sub buildSeries()
     
     getDeparturesStartAndEndRows
-    getExtensionPricingStartAndEndRows
     
     originalWorksheet.Activate
     Cells(1, 1).Activate
     
     Set Series = New Series
-    Series.name = Cells(1, 1).Value
-    Series.code = Cells(2, 1).Value
+    Series.name = UCase(Cells(1, 1).Value)
+    Series.code = UCase(Cells(2, 1).Value)
     
     Set seriesDataWorksheet = Workbooks("Build Pricing Macro").Worksheets(Series.code)
     
@@ -92,29 +91,6 @@ Private Sub getDeparturesStartAndEndRows()
             departuresEndRow = i - 1
             Exit For
         End If
-    Next i
-
-End Sub
-
-
-Private Sub getExtensionPricingStartAndEndRows()
-
-    originalWorksheet.Activate
-    Cells(1, 1).Activate
-    
-    extensionPricingStartRow = 0
-    extensionPricingEndRow = 0
-    
-    Dim i As Long
-    For i = 1 To 1000
-        
-        If Cells(i, 1).Value = "Series" Then
-            extensionPricingStartRow = i
-        ElseIf (Cells(i, 1).Value = "" And extensionPricingStartRow <> 0) Then
-            extensionPricingEndRow = i - 1
-            Exit For
-        End If
-
     Next i
 
 End Sub
@@ -171,8 +147,8 @@ Private Function getLandOnlyExtensions() As Variant
     
     Do While Cells(i + 3, 1).Value <> ""
         ReDim Preserve extensions(i)
-        extensions(i).name = "Land Only " & i + 1
-        extensions(i).code = Cells(i + 3, 1).Value
+        extensions(i).name = "LAND ONLY " & i + 1
+        extensions(i).code = UCase(Cells(i + 3, 1).Value)
         extensions(i).dateOffset = 0
         
         i = i + 1
@@ -195,11 +171,13 @@ Private Function getCategories(extensionName As String, extensionCode As String,
     Dim departuresWithoutExtensionPricing() As New Departure
     departuresWithoutExtensionPricing = getDeparturesWithoutExtensionCurrencyPrices(dateOffset)
     
-    If extensionName Like "Land Only*" Then
+    If extensionName Like "LAND ONLY*" Then
+        
         ReDim categories(0)
-        categories(0).name = "Land Only"
+        categories(0).name = "LAND ONLY"
         categories(0).code = extensionCode
         categories(0).departures = departuresWithoutExtensionPricing
+
     Else
     
         ReDim categories(categoriesDict.Count - 1)
@@ -322,7 +300,7 @@ Private Sub buildInfoDicts()
                 Do While Cells(i + j, 2) <> ""
                     Set rowDict = New Scripting.Dictionary
             
-                    rowDict.Add "Name", Cells(i + j, 2).Value
+                    rowDict.Add "Name", UCase(Cells(i + j, 2).Value)
                     rowDict.Add "Date Offset", CLng(Cells(i + j, 3).Value)
             
                     extensionDict.Add j, rowDict
@@ -334,8 +312,8 @@ Private Sub buildInfoDicts()
                 Do While Cells(i + j, 2) <> ""
                     Set rowDict = New Scripting.Dictionary
                     
-                    rowDict.Add "Name", Cells(i + j, 2).Value
-                    rowDict.Add "Code", Cells(i + j, 3).Value
+                    rowDict.Add "Name", UCase(Cells(i + j, 2).Value)
+                    rowDict.Add "Code", UCase(Cells(i + j, 3).Value)
                     
                     categoriesDict.Add j, rowDict
                     j = j + 1
@@ -389,9 +367,6 @@ Private Sub buildColumnsDict()
             
                 Case "BUILD " & currencyCodeArray(i)
                     columnsDict.Add "BUILD " & currencyCodeArray(i), j
-                
-                Case "BROCHURE " & currencyCodeArray(i)
-                    columnsDict.Add "BROCHURE " & currencyCodeArray(i), j
             
                 Case "SINGLE SUPP " & currencyCodeArray(i)
                     columnsDict.Add "SINGLE SUPP " & currencyCodeArray(i), j
@@ -410,11 +385,9 @@ Private Sub buildColumnsDict()
         
     Next i
     
-    columnsDict.Add "BROCHURE GET", columnsDict("BROCHURE USD")
     columnsDict.Add "SINGLE SUPP GET", columnsDict("SINGLE SUPP USD")
     columnsDict.Add "TRIPLE DISC GET", columnsDict("TRIPLE DISC USD")
     columnsDict.Add "YTD GET", columnsDict("YTD USD")
-    columnsDict.Add "BROCHURE SIN", columnsDict("BROCHURE USD")
     columnsDict.Add "SINGLE SUPP SIN", columnsDict("SINGLE SUPP USD")
     columnsDict.Add "TRIPLE DISC SIN", columnsDict("TRIPLE DISC USD")
     columnsDict.Add "YTD SIN", columnsDict("YTD USD")
@@ -434,99 +407,128 @@ End Sub
 
 Private Sub buildExtensionPricesDict()
 
-    originalWorksheet.Activate
+    Dim ws As Worksheet
+    For Each ws In originalWorksheet.Parent.Worksheets
+        If ws.name Like "Rocky Mountaineer-*" Then
+            ws.Activate
+            Exit For
+        End If
+    Next ws
+    
     Cells(1, 1).Activate
     
-    Dim currencyCodeArray(8) As String
+    Dim currencyCodeArray() As String
+    ReDim currencyCodeArray(10)
     currencyCodeArray(0) = "AUD"
     currencyCodeArray(1) = "CAD"
     currencyCodeArray(2) = "EUR"
     currencyCodeArray(3) = "GBP"
-    currencyCodeArray(4) = "GET"
-    currencyCodeArray(5) = "NZD"
-    currencyCodeArray(6) = "SAR"
-    currencyCodeArray(7) = "SIN"
-    currencyCodeArray(8) = "USD"
+    currencyCodeArray(4) = "NZD"
+    currencyCodeArray(5) = "SAR"
+    currencyCodeArray(6) = "USD"
+    currencyCodeArray(7) = "CODE"
+    currencyCodeArray(8) = "CATEGORY"
+    currencyCodeArray(9) = "SUPPORT"
+    currencyCodeArray(10) = "TYPE"
     
-    Dim i As Long, j As Long
-
-    Dim catDict As New Scripting.Dictionary
-    For i = (extensionPricingStartRow + 1) To extensionPricingEndRow
-        catDict(Cells(i, 2).Value) = i
-    Next i
-    
-    Dim paxTypeDict As New Scripting.Dictionary
-    For i = (extensionPricingStartRow + 1) To extensionPricingEndRow
-        paxTypeDict(Cells(i, 3).Value) = i
-    Next i
-    
-    Dim rbDict As New Scripting.Dictionary
-    For i = (extensionPricingStartRow + 1) To extensionPricingEndRow
-        rbDict(Cells(i, 4).Value) = i
-    Next i
-    
+    Dim i As Long, j As Long, k As Long, startRow As Long, startColumn As Long, tripRow As Long
+    Dim cat As String
     Set extensionPricesDict = New Scripting.Dictionary
-    Dim rbPricingDict As Scripting.Dictionary
+    Dim extensionColumnsDict As New Scripting.Dictionary, rbPricingDict As Scripting.Dictionary
     Dim currencyPricesArray() As New CurrencyPricing
     Dim roomTypePrices As Prices
-    Dim catKey As Variant, rbKey As Variant, ptKey As Variant, ecKey As Variant
-    Dim startRow As Long
     
-    For Each catKey In catDict.Keys
+    'Get start row(i)/column(j) by looking for "BRAND"
+    For i = 1 To 1000
+    
+        If startColumn = 0 Then
+        
+            For j = 1 To 1000
+            
+                If Cells(i, j).Value = "BRAND" Then
+                    startRow = i
+                    startColumn = j
+                    Exit For
+                End If
+            
+            Next j
+        
+        ElseIf Cells(i, startColumn + 1).Value = Series.code Then
+        
+            tripRow = i
+            Exit For
+            
+        End If
+    
+    Next i
+    
+    For i = 0 To (UBound(currencyCodeArray) - LBound(currencyCodeArray))
+    
+        For j = startColumn To 1000
+        
+            If Cells(startRow, j).Value = currencyCodeArray(i) Then
+                extensionColumnsDict.Add currencyCodeArray(i), j
+                Exit For
+            End If
+        
+        Next j
+    
+    Next i
+    
+    extensionColumnsDict.Add "GET", extensionColumnsDict("USD")
+    currencyCodeArray(7) = "GET"
+    extensionColumnsDict.Add "SIN", extensionColumnsDict("USD")
+    currencyCodeArray(8) = "SIN"
+    ReDim Preserve currencyCodeArray(8)
+
+    i = tripRow
+    Do While Cells(i, extensionColumnsDict("CODE")).Value = Series.code
     
         Set rbPricingDict = New Scripting.Dictionary
+        cat = Cells(i, extensionColumnsDict("CATEGORY")).Value
         
-        For Each rbKey In rbDict.Keys
+        Do While (Cells(i, extensionColumnsDict("CODE")).Value = Series.code And Cells(i, extensionColumnsDict("CATEGORY")).Value = cat)
         
             ReDim currencyPricesArray(8)
             
-            startRow = startRow + 1
-            Do While (Cells(extensionPricingStartRow + startRow, 2).Value <> catKey) Or (Cells(extensionPricingStartRow + startRow, 4).Value <> rbKey)
-                startRow = startRow + 1
-            Loop
-            
-            For i = 0 To (UBound(currencyCodeArray) - LBound(currencyCodeArray))
-            
-                currencyPricesArray(i).code = currencyCodeArray(i)
-                
+            For k = 0 To (UBound(currencyCodeArray) - LBound(currencyCodeArray))
+        
+                currencyPricesArray(k).code = currencyCodeArray(k)
                 Set roomTypePrices = New Prices
                 
-                For Each ptKey In paxTypeDict.Keys
-                
-                    j = 0
-                    Do While Cells(extensionPricingStartRow + startRow + j, 3).Value <> ptKey
-                        j = j + 1
-                    Loop
-                
-                    Select Case ptKey
-                            
-                        Case "Twin"
-                            roomTypePrices.twinPrice = Cells(extensionPricingStartRow + startRow + j, columnsDict("BROCHURE " & currencyCodeArray(i))).Value
+                For j = 0 To 3
+        
+                    Select Case Cells(i + j, extensionColumnsDict("TYPE")).Value
+                                
+                        Case "DOUBLE"
+                            roomTypePrices.twinPrice = Cells(i + j, extensionColumnsDict(currencyCodeArray(k))).Value
                         
-                        Case "Single"
-                            roomTypePrices.singlePrice = Cells(extensionPricingStartRow + startRow + j, columnsDict("BROCHURE " & currencyCodeArray(i))).Value
+                        Case "SINGLE"
+                            roomTypePrices.singlePrice = Cells(i + j, extensionColumnsDict(currencyCodeArray(k))).Value
                         
-                        Case "Triple"
-                            roomTypePrices.triplePrice = Abs(Cells(extensionPricingStartRow + startRow + j, columnsDict("BROCHURE " & currencyCodeArray(i))).Value)
+                        Case "TRIPLE"
+                            roomTypePrices.triplePrice = Abs(Cells(i + j, extensionColumnsDict(currencyCodeArray(k))).Value)
                         
-                        Case "Child"
-                            roomTypePrices.childPrice = Abs(Cells(extensionPricingStartRow + startRow + j, columnsDict("BROCHURE " & currencyCodeArray(i))).Value)
+                        Case "CHILD"
+                            roomTypePrices.childPrice = Abs(Cells(i + j, extensionColumnsDict(currencyCodeArray(k))).Value)
                     
                     End Select
                 
-                Next ptKey
+                Next j
                 
-                    Set currencyPricesArray(i).roomTypePrices = roomTypePrices
+                Set currencyPricesArray(k).roomTypePrices = roomTypePrices
                 
-            Next i
+            Next k
             
-            rbPricingDict.Add rbKey, currencyPricesArray
-            
-        Next rbKey
+            rbPricingDict.Add Cells(i, extensionColumnsDict("SUPPORT")).Value, currencyPricesArray
         
-        extensionPricesDict.Add catKey, rbPricingDict
+            i = i + 5
+        
+        Loop
+        
+        extensionPricesDict.Add UCase(Cells(i - 5, extensionColumnsDict("CATEGORY")).Value), rbPricingDict
     
-    Next catKey
+    Loop
     
     
 '********** For Debugging **********
@@ -565,6 +567,7 @@ Private Function getLandOnlyCurrencyPrices(currentRow As Long) As Variant
     
     Dim i As Long
     For i = 0 To (UBound(currencyCodeArray) - LBound(currencyCodeArray))
+        
         Set roomTypePrice = New Prices
         
         pricing(i).code = currencyCodeArray(i)
@@ -574,6 +577,7 @@ Private Function getLandOnlyCurrencyPrices(currentRow As Long) As Variant
         roomTypePrice.childPrice = Cells(currentRow, columnsDict("YTD " & currencyCodeArray(i))).Value
         
         Set pricing(i).roomTypePrices = roomTypePrice
+        
     Next i
 
 
@@ -734,7 +738,7 @@ Private Sub exportToCSV()
                     code = Series.extensions(i).categories()(j).departures()(l).code
                     twinPrice = Series.extensions(i).categories()(j).departures()(l).originalCurrencyPrices()(k).roomTypePrices.twinPrice
                     
-                    If Series.extensions(i).name Like "Land Only*" Then
+                    If Series.extensions(i).name Like "LAND ONLY*" Then
                     
                         singlePrice = Series.extensions(i).categories()(j).departures()(l).originalCurrencyPrices()(k).roomTypePrices.singlePrice
                         triplePrice = Series.extensions(i).categories()(j).departures()(l).originalCurrencyPrices()(k).roomTypePrices.triplePrice
