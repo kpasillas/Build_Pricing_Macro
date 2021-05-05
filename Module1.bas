@@ -231,7 +231,7 @@ Private Function getDeparturesWithoutExtensionCurrencyPrices(dateOffset As Long)
     Dim i As Long, j As Long
     For i = (departuresStartRow + 1) To departuresEndRow
         
-        If Cells(i, 5).Value = "CIRCLE(Stampede)" Then
+        If (Cells(i, columnsDict("BUILD SUPPORT")).Value <> "") And (Not Cells(i, columnsDict("BUILD SUPPORT")).Value Like "No*") Then
         
             ReDim Preserve depArray(UBound(depArray) - 1)
         
@@ -244,7 +244,7 @@ Private Function getDeparturesWithoutExtensionCurrencyPrices(dateOffset As Long)
             depArray(j).originalCurrencyPrices = getLandOnlyCurrencyPrices(i)
             depArray(j).rateBandID = getRateBand(Cells(i, 2).Value + dateOffset)
             
-            If Cells(i, 9).Value Like "No*" Then
+            If Cells(i, columnsDict("BUILD SUPPORT")).Value Like "No*" Then
                 depArray(j).extensionOffered = False
             Else
                 depArray(j).extensionOffered = True
@@ -370,6 +370,9 @@ Private Sub buildColumnsDict()
             
             Select Case Cells(departuresStartRow, j).Value
             
+                Case "BUILD SUPPORT"
+                    columnsDict("BUILD SUPPORT") = j
+                
                 Case "BUILD " & currencyCodeArray(i)
                     columnsDict.Add "BUILD " & currencyCodeArray(i), j
             
