@@ -35,7 +35,7 @@ Sub buildPricingMacro()
             Dim ws As Worksheet
             For Each ws In ActiveWorkbook.Worksheets
                 
-                If ws.name Like "*(PRC)" Then
+                If ws.name Like "*PRC" Then
                 
                     Set currentWorksheet = ws
                     buildSeries
@@ -67,9 +67,14 @@ Private Sub buildSeries()
     Series.name = UCase(Cells(1, 1).Value)
     Series.code = UCase(Cells(2, 1).Value)
     
-    Set seriesDataWorksheet = Workbooks("Build Pricing Macro").Worksheets(Series.code)
-    
-    buildInfoDicts
+    If extensionPricesDict.Exists(Series.code) Then
+        Set seriesDataWorksheet = Workbooks("Build Pricing Macro").Worksheets(Series.code)
+        buildInfoDicts
+    Else
+        Set seriesDataWorksheet = Workbooks("Build Pricing Macro").Worksheets(1)
+        Set extensionDict = New Scripting.Dictionary
+        Set rateBandsDict = New Scripting.Dictionary
+    End If
     
     Series.extensions = getExtensions
     
@@ -243,7 +248,12 @@ Private Function getDeparturesWithoutExtensionCurrencyPrices(dateOffset As Long)
             depArray(j).code = Cells(i, 1).Value
             depArray(j).startDate = Cells(i, 2).Value
             depArray(j).originalCurrencyPrices = getLandOnlyCurrencyPrices(i)
-            depArray(j).rateBandID = getRateBand(Cells(i, 2).Value + dateOffset)
+            
+            If rateBandsDict.Count = 0 Then
+                depArray(j).rateBandID = 0
+            Else
+                depArray(j).rateBandID = getRateBand(Cells(i, 2).Value + dateOffset)
+            End If
             
             If Cells(i, columnsDict("BUILD SUPPORT")).Value Like "No*" Then
                 depArray(j).extensionOffered = False
@@ -804,7 +814,7 @@ Private Function getProductCodeAndSellingOffice(opCode As String) As Scripting.D
 
     Dim ws As Worksheet
     For Each ws In seriesDataWorksheet.Parent.Worksheets
-        If ws.name Like "*Codes" Then
+        If ws.name = "Master Codes List" Then
             ws.Activate
             Exit For
         End If
@@ -814,7 +824,7 @@ Private Function getProductCodeAndSellingOffice(opCode As String) As Scripting.D
     Dim codesDict As Scripting.Dictionary
     
     Dim i As Long, j As Long
-    For i = 1 To 1000
+    For i = 1 To 10000
         
         If Cells(i, 3).Value = opCode Then
         
@@ -826,47 +836,47 @@ Private Function getProductCodeAndSellingOffice(opCode As String) As Scripting.D
                 Select Case True
                 
                     Case Cells(i + j, 5).Value Like "GEUSAS"
-                        codesDict.Add "Product Code", Cells(i + j, 6).Value
+                        codesDict.Add "Product Code", Cells(i + j, 4).Value
                         codesDict.Add "Selling Company", Cells(i + j, 5).Value
                         productCodeAndSellingOfficeDict.Add "GET", codesDict
                     
                     Case Cells(i + j, 5).Value Like "*SYDS"
-                        codesDict.Add "Product Code", Cells(i + j, 6).Value
+                        codesDict.Add "Product Code", Cells(i + j, 4).Value
                         codesDict.Add "Selling Company", Cells(i + j, 5).Value
                         productCodeAndSellingOfficeDict.Add "AUD", codesDict
                     
                     Case Cells(i + j, 5).Value Like "*AKLS"
-                        codesDict.Add "Product Code", Cells(i + j, 6).Value
+                        codesDict.Add "Product Code", Cells(i + j, 4).Value
                         codesDict.Add "Selling Company", Cells(i + j, 5).Value
                         productCodeAndSellingOfficeDict.Add "NZD", codesDict
                         
                     Case Cells(i + j, 5).Value Like "*USAS"
-                        codesDict.Add "Product Code", Cells(i + j, 6).Value
+                        codesDict.Add "Product Code", Cells(i + j, 4).Value
                         codesDict.Add "Selling Company", Cells(i + j, 5).Value
                         productCodeAndSellingOfficeDict.Add "USD", codesDict
                     
                     Case Cells(i + j, 5).Value Like "*CANS"
-                        codesDict.Add "Product Code", Cells(i + j, 6).Value
+                        codesDict.Add "Product Code", Cells(i + j, 4).Value
                         codesDict.Add "Selling Company", Cells(i + j, 5).Value
                         productCodeAndSellingOfficeDict.Add "CAD", codesDict
                         
                     Case Cells(i + j, 5).Value Like "*JBGS"
-                        codesDict.Add "Product Code", Cells(i + j, 6).Value
+                        codesDict.Add "Product Code", Cells(i + j, 4).Value
                         codesDict.Add "Selling Company", Cells(i + j, 5).Value
                         productCodeAndSellingOfficeDict.Add "SAR", codesDict
                         
                     Case Cells(i + j, 5).Value Like "*UKLS"
-                        codesDict.Add "Product Code", Cells(i + j, 6).Value
+                        codesDict.Add "Product Code", Cells(i + j, 4).Value
                         codesDict.Add "Selling Company", Cells(i + j, 5).Value
                         productCodeAndSellingOfficeDict.Add "GBP", codesDict
                         
                     Case Cells(i + j, 5).Value Like "*SINS"
-                        codesDict.Add "Product Code", Cells(i + j, 6).Value
+                        codesDict.Add "Product Code", Cells(i + j, 4).Value
                         codesDict.Add "Selling Company", Cells(i + j, 5).Value
                         productCodeAndSellingOfficeDict.Add "SIN", codesDict
                     
                     Case Cells(i + j, 5).Value Like "*EUOS"
-                        codesDict.Add "Product Code", Cells(i + j, 6).Value
+                        codesDict.Add "Product Code", Cells(i + j, 4).Value
                         codesDict.Add "Selling Company", Cells(i + j, 5).Value
                         productCodeAndSellingOfficeDict.Add "EUR", codesDict
                 
