@@ -12,7 +12,7 @@ Sub buildPricingMacro()
     
     Application.ScreenUpdating = False
     
-    If Application.ActiveWorkbook.name = "Build Pricing Macro.xlsm" Then
+    If Application.ActiveWorkbook.name = Application.ThisWorkbook.name Then
     
         MsgBox "Macro must be run from Pricing file. Please try again."
     
@@ -68,10 +68,10 @@ Private Sub buildSeries()
     Series.code = UCase(Cells(2, 1).Value)
     
     If extensionPricesDict.Exists(Series.code) Then
-        Set seriesDataWorksheet = Workbooks("Build Pricing Macro").Worksheets(Series.code)
+        Set seriesDataWorksheet = Application.ThisWorkbook.Worksheets(Series.code)
         buildInfoDicts
     Else
-        Set seriesDataWorksheet = Workbooks("Build Pricing Macro").Worksheets(1)
+        Set seriesDataWorksheet = Application.ThisWorkbook.Worksheets(1)
         Set extensionDict = New Scripting.Dictionary
         Set rateBandsDict = New Scripting.Dictionary
     End If
