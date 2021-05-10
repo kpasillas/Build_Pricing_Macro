@@ -158,9 +158,19 @@ Private Function getLandOnlyExtensions() As Variant
 
     currentWorksheet.Activate
     
+    'Hard code at least one land-only code
     Dim extensions() As New Extension
-    Dim i As Long
+    ReDim extensions(0)
+    extensions(0).name = "LAND ONLY 1"
+    If Cells(3, 1).Value = "" Then
+        extensions(0).code = "IGNORE"
+    Else
+        extensions(0).code = UCase(Cells(3, 1).Value)
+    End If
+    extensions(0).dateOffset = 0
     
+    Dim i As Long
+    i = 1
     Do While Cells(i + 3, 1).Value <> ""
         ReDim Preserve extensions(i)
         extensions(i).name = "LAND ONLY " & i + 1
@@ -428,7 +438,7 @@ Private Sub buildExtensionPricesDict()
 
     Dim ws As Worksheet
     For Each ws In originalWorksheet.Parent.Worksheets
-        If ws.name Like "Rocky Mountaineer-*" Then
+        If ws.name Like "Rocky Mountaineer*" Then
             ws.Activate
             Exit For
         End If
@@ -493,7 +503,7 @@ Private Sub buildExtensionPricesDict()
     currencyCodeArray(8) = "SIN"
     ReDim Preserve currencyCodeArray(8)
     
-    i = startRow + 1
+    i = startRow + 2
     Do While Cells(i, extensionColumnsDict("CODE")).Value <> ""
         
         ReDim currencyPricesArray(UBound(currencyCodeArray))
@@ -732,55 +742,60 @@ Private Sub exportToCSV()
     
     For i = 0 To (UBound(Series.extensions) - LBound(Series.extensions))
         
-        For j = 0 To (UBound(Series.extensions(i).categories) - LBound(Series.extensions(i).categories))
-        
-            Set productCodeAndSellingOfficeDict = getProductCodeAndSellingOffice(Series.extensions(i).categories()(j).code)
-            MkDir tripNameFolderPath & "\" & Series.extensions(i).categories()(j).code
+        If Series.extensions(i).code <> "IGNORE" Then
             
-            For k = 0 To (UBound(Series.extensions(i).categories()(j).departures()(0).originalCurrencyPrices()) - LBound(Series.extensions(i).categories()(j).departures()(0).originalCurrencyPrices()))
+            For j = 0 To (UBound(Series.extensions(i).categories) - LBound(Series.extensions(i).categories))
                 
-                'Debug.Print "i: " & i, "j: " & j, "Category Code: " & series.extensions(i).categories()(j).code, "Currency Code: " & series.extensions(i).categories()(j).departures()(0).originalCurrencyPrices()(k).code
-                sFilePath = tripNameFolderPath & "\" & Series.extensions(i).categories()(j).code & "\" & Series.extensions(i).categories()(j).departures()(0).originalCurrencyPrices()(k).code & ".csv"
-                fileNumber = FreeFile
-                Open sFilePath For Output As #fileNumber
-        
-                Write #fileNumber, "Product Code", productCodeAndSellingOfficeDict(Series.extensions(i).categories()(j).departures()(0).originalCurrencyPrices()(k).code)("Product Code"), "Selling Company", productCodeAndSellingOfficeDict(Series.extensions(i).categories()(j).departures()(0).originalCurrencyPrices()(k).code)("Selling Company"), "Default Room Type", "Twin"
-                Write #fileNumber,
-                Write #fileNumber, "Teenager discount (absolute)", "0", "Food Fund", "0", "Port Taxes-Adult", "0", "Port Taxes-Child", "0"
-                Write #fileNumber,
-                Write #fileNumber,
-                Write #fileNumber, "Start Date", "Season Name", "Single(S)", "Twin", "Triple(R)", "Quad(R)", "Child(R)"
+                Set productCodeAndSellingOfficeDict = getProductCodeAndSellingOffice(Series.extensions(i).categories()(j).code)
+                
+                MkDir tripNameFolderPath & "\" & Series.extensions(i).categories()(j).code
+                
+                For k = 0 To (UBound(Series.extensions(i).categories()(j).departures()(0).originalCurrencyPrices()) - LBound(Series.extensions(i).categories()(j).departures()(0).originalCurrencyPrices()))
+                    
+                    'Debug.Print "i: " & i, "j: " & j, "Category Code: " & series.extensions(i).categories()(j).code, "Currency Code: " & series.extensions(i).categories()(j).departures()(0).originalCurrencyPrices()(k).code
+                    sFilePath = tripNameFolderPath & "\" & Series.extensions(i).categories()(j).code & "\" & Series.extensions(i).categories()(j).departures()(0).originalCurrencyPrices()(k).code & ".csv"
+                    fileNumber = FreeFile
+                    Open sFilePath For Output As #fileNumber
             
-                For l = 0 To (UBound(Series.extensions(i).categories()(j).departures()) - LBound(Series.extensions(i).categories()(j).departures()))
-            
-                    startDate = Format(Series.extensions(i).categories()(j).departures()(l).startDate, "dd-mmm-yy")
-                    code = Series.extensions(i).categories()(j).departures()(l).code
-                    twinPrice = Series.extensions(i).categories()(j).departures()(l).originalCurrencyPrices()(k).roomTypePrices.twinPrice
-                    
-                    If Series.extensions(i).name Like "LAND ONLY*" Then
-                    
-                        singlePrice = Series.extensions(i).categories()(j).departures()(l).originalCurrencyPrices()(k).roomTypePrices.singlePrice
-                        triplePrice = Series.extensions(i).categories()(j).departures()(l).originalCurrencyPrices()(k).roomTypePrices.triplePrice
-                        childPrice = Series.extensions(i).categories()(j).departures()(l).originalCurrencyPrices()(k).roomTypePrices.childPrice
-                    
-                    Else
+                    Write #fileNumber, "Product Code", productCodeAndSellingOfficeDict(Series.extensions(i).categories()(j).departures()(0).originalCurrencyPrices()(k).code)("Product Code"), "Selling Company", productCodeAndSellingOfficeDict(Series.extensions(i).categories()(j).departures()(0).originalCurrencyPrices()(k).code)("Selling Company"), "Default Room Type", "Twin"
+                    Write #fileNumber,
+                    Write #fileNumber, "Teenager discount (absolute)", "0", "Food Fund", "0", "Port Taxes-Adult", "0", "Port Taxes-Child", "0"
+                    Write #fileNumber,
+                    Write #fileNumber,
+                    Write #fileNumber, "Start Date", "Season Name", "Single(S)", "Twin", "Triple(R)", "Quad(R)", "Child(R)"
+                
+                    For l = 0 To (UBound(Series.extensions(i).categories()(j).departures()) - LBound(Series.extensions(i).categories()(j).departures()))
+                
+                        startDate = Format(Series.extensions(i).categories()(j).departures()(l).startDate, "dd-mmm-yy")
+                        code = Series.extensions(i).categories()(j).departures()(l).code
+                        twinPrice = Series.extensions(i).categories()(j).departures()(l).originalCurrencyPrices()(k).roomTypePrices.twinPrice
                         
-                        singlePrice = Series.extensions(i).categories()(j).departures()(l).originalCurrencyPrices()(k).roomTypePrices.singlePrice + Series.extensions(i).categories()(j).departures()(l).extensionCurrencyPrices()(Series.extensions(i).categories()(j).departures()(0).originalCurrencyPrices()(k).code).roomTypePrices.singlePrice
-                        triplePrice = Series.extensions(i).categories()(j).departures()(l).originalCurrencyPrices()(k).roomTypePrices.triplePrice + Series.extensions(i).categories()(j).departures()(l).extensionCurrencyPrices()(Series.extensions(i).categories()(j).departures()(0).originalCurrencyPrices()(k).code).roomTypePrices.triplePrice
-                        childPrice = Series.extensions(i).categories()(j).departures()(l).originalCurrencyPrices()(k).roomTypePrices.childPrice + Series.extensions(i).categories()(j).departures()(l).extensionCurrencyPrices()(Series.extensions(i).categories()(j).departures()(0).originalCurrencyPrices()(k).code).roomTypePrices.childPrice
+                        If Series.extensions(i).name Like "LAND ONLY*" Then
+                        
+                            singlePrice = Series.extensions(i).categories()(j).departures()(l).originalCurrencyPrices()(k).roomTypePrices.singlePrice
+                            triplePrice = Series.extensions(i).categories()(j).departures()(l).originalCurrencyPrices()(k).roomTypePrices.triplePrice
+                            childPrice = Series.extensions(i).categories()(j).departures()(l).originalCurrencyPrices()(k).roomTypePrices.childPrice
+                        
+                        Else
+                            
+                            singlePrice = Series.extensions(i).categories()(j).departures()(l).originalCurrencyPrices()(k).roomTypePrices.singlePrice + Series.extensions(i).categories()(j).departures()(l).extensionCurrencyPrices()(Series.extensions(i).categories()(j).departures()(0).originalCurrencyPrices()(k).code).roomTypePrices.singlePrice
+                            triplePrice = Series.extensions(i).categories()(j).departures()(l).originalCurrencyPrices()(k).roomTypePrices.triplePrice + Series.extensions(i).categories()(j).departures()(l).extensionCurrencyPrices()(Series.extensions(i).categories()(j).departures()(0).originalCurrencyPrices()(k).code).roomTypePrices.triplePrice
+                            childPrice = Series.extensions(i).categories()(j).departures()(l).originalCurrencyPrices()(k).roomTypePrices.childPrice + Series.extensions(i).categories()(j).departures()(l).extensionCurrencyPrices()(Series.extensions(i).categories()(j).departures()(0).originalCurrencyPrices()(k).code).roomTypePrices.childPrice
+                        
+                        End If
+                        
+                        Write #fileNumber, startDate, code, singlePrice, twinPrice, triplePrice, "NA", childPrice
+                        'Debug.Print "k: " & k, "l: " & l, startDate, code, singlePrice, twinPrice, triplePrice, "NA", childPrice
+                        
+                    Next l
                     
-                    End If
-                    
-                    Write #fileNumber, startDate, code, singlePrice, twinPrice, triplePrice, "NA", childPrice
-                    'Debug.Print "k: " & k, "l: " & l, startDate, code, singlePrice, twinPrice, triplePrice, "NA", childPrice
-                    
-                Next l
-                
-                Close #fileNumber
-                    
-            Next k
+                    Close #fileNumber
+                        
+                Next k
             
-        Next j
+            Next j
+        
+        End If
         
     Next i
 
