@@ -609,9 +609,24 @@ Private Function getLandOnlyCurrencyPrices(currentRow As Long) As Variant
         
         pricing(i).code = currencyCodeArray(i)
         roomTypePrice.twinPrice = Cells(currentRow, columnsDict("BUILD " & currencyCodeArray(i))).Value
-        roomTypePrice.singlePrice = Cells(currentRow, columnsDict("SINGLE SUPP " & currencyCodeArray(i))).Value
-        roomTypePrice.triplePrice = Cells(currentRow, columnsDict("TRIPLE DISC " & currencyCodeArray(i))).Value
-        roomTypePrice.childPrice = Cells(currentRow, columnsDict("YTD " & currencyCodeArray(i))).Value
+        
+        If Cells(currentRow, columnsDict("SINGLE SUPP " & currencyCodeArray(i))).Value = "" Then
+            roomTypePrice.singlePrice = 0
+        Else
+            roomTypePrice.singlePrice = Cells(currentRow, columnsDict("SINGLE SUPP " & currencyCodeArray(i))).Value
+        End If
+        
+        If Cells(currentRow, columnsDict("TRIPLE DISC " & currencyCodeArray(i))).Value = "" Then
+            roomTypePrice.triplePrice = 0
+        Else
+            roomTypePrice.triplePrice = Cells(currentRow, columnsDict("TRIPLE DISC " & currencyCodeArray(i))).Value
+        End If
+        
+        If Cells(currentRow, columnsDict("YTD " & currencyCodeArray(i))).Value = "" Then
+            roomTypePrice.childPrice = 0
+        Else
+            roomTypePrice.childPrice = Cells(currentRow, columnsDict("YTD " & currencyCodeArray(i))).Value
+        End If
         
         Set pricing(i).roomTypePrices = roomTypePrice
         
@@ -778,9 +793,23 @@ Private Sub exportToCSV()
                         
                         Else
                             
-                            singlePrice = Series.extensions(i).categories()(j).departures()(l).originalCurrencyPrices()(k).roomTypePrices.singlePrice + Series.extensions(i).categories()(j).departures()(l).extensionCurrencyPrices()(Series.extensions(i).categories()(j).departures()(0).originalCurrencyPrices()(k).code).roomTypePrices.singlePrice
-                            triplePrice = Series.extensions(i).categories()(j).departures()(l).originalCurrencyPrices()(k).roomTypePrices.triplePrice + Series.extensions(i).categories()(j).departures()(l).extensionCurrencyPrices()(Series.extensions(i).categories()(j).departures()(0).originalCurrencyPrices()(k).code).roomTypePrices.triplePrice
-                            childPrice = Series.extensions(i).categories()(j).departures()(l).originalCurrencyPrices()(k).roomTypePrices.childPrice + Series.extensions(i).categories()(j).departures()(l).extensionCurrencyPrices()(Series.extensions(i).categories()(j).departures()(0).originalCurrencyPrices()(k).code).roomTypePrices.childPrice
+                            If Series.extensions(i).categories()(j).departures()(l).originalCurrencyPrices()(k).roomTypePrices.singlePrice = 0 Then
+                                singlePrice = 0
+                            Else
+                                singlePrice = Series.extensions(i).categories()(j).departures()(l).originalCurrencyPrices()(k).roomTypePrices.singlePrice + Series.extensions(i).categories()(j).departures()(l).extensionCurrencyPrices()(Series.extensions(i).categories()(j).departures()(0).originalCurrencyPrices()(k).code).roomTypePrices.singlePrice
+                            End If
+                            
+                            If Series.extensions(i).categories()(j).departures()(l).originalCurrencyPrices()(k).roomTypePrices.triplePrice = 0 Then
+                                triplePrice = 0
+                            Else
+                                triplePrice = Series.extensions(i).categories()(j).departures()(l).originalCurrencyPrices()(k).roomTypePrices.triplePrice + Series.extensions(i).categories()(j).departures()(l).extensionCurrencyPrices()(Series.extensions(i).categories()(j).departures()(0).originalCurrencyPrices()(k).code).roomTypePrices.triplePrice
+                            End If
+                            
+                            If Series.extensions(i).categories()(j).departures()(l).originalCurrencyPrices()(k).roomTypePrices.childPrice = 0 Then
+                                childPrice = 0
+                            Else
+                                childPrice = Series.extensions(i).categories()(j).departures()(l).originalCurrencyPrices()(k).roomTypePrices.childPrice + Series.extensions(i).categories()(j).departures()(l).extensionCurrencyPrices()(Series.extensions(i).categories()(j).departures()(0).originalCurrencyPrices()(k).code).roomTypePrices.childPrice
+                            End If
                         
                         End If
                         
