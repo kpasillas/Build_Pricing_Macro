@@ -521,7 +521,7 @@ Private Sub buildExtensionPricesDict()
             For k = 0 To 3
             
                 roomType = Cells(i + k, extensionColumnsDict("TYPE")).Value
-                currencyPrice = Cells(i + k, extensionColumnsDict(currencyCode)).Value
+                currencyPrice = Abs(Cells(i + k, extensionColumnsDict(currencyCode)).Value)
                 
                 Select Case roomType
                 
