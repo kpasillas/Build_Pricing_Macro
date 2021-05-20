@@ -505,60 +505,64 @@ Private Sub buildExtensionPricesDict()
     i = startRow + 2
     Do While Cells(i, extensionColumnsDict("CODE")).Value <> ""
         
-        ReDim currencyPricesArray(UBound(currencyCodeArray))
-        
-        tripCode = Cells(i, extensionColumnsDict("CODE")).Value
-        cat = Cells(i, extensionColumnsDict("CATEGORY")).Value
-        rateBandID = Cells(i, extensionColumnsDict("SUPPORT")).Value
-        
-        For j = 0 To (UBound(currencyCodeArray) - LBound(currencyCodeArray))
+        If Cells(i, extensionColumnsDict("SUPPORT")).Value <> "" Then
+
+            ReDim currencyPricesArray(UBound(currencyCodeArray))
             
-            Set roomTypePrices = New Prices
+            tripCode = Cells(i, extensionColumnsDict("CODE")).Value
+            cat = Cells(i, extensionColumnsDict("CATEGORY")).Value
+            rateBandID = Cells(i, extensionColumnsDict("SUPPORT")).Value
             
-            currencyCode = currencyCodeArray(j)
-            currencyPricesArray(j).code = currencyCode
-            
-            For k = 0 To 3
-            
-                roomType = Cells(i + k, extensionColumnsDict("TYPE")).Value
-                currencyPrice = Abs(Cells(i + k, extensionColumnsDict(currencyCode)).Value)
+            For j = 0 To (UBound(currencyCodeArray) - LBound(currencyCodeArray))
                 
-                Select Case roomType
+                Set roomTypePrices = New Prices
                 
-                    Case "DOUBLE"
-                        roomTypePrices.twinPrice = currencyPrice
+                currencyCode = currencyCodeArray(j)
+                currencyPricesArray(j).code = currencyCode
+                
+                For k = 0 To 3
+                
+                    roomType = Cells(i + k, extensionColumnsDict("TYPE")).Value
+                    currencyPrice = Abs(Cells(i + k, extensionColumnsDict(currencyCode)).Value)
                     
-                    Case "SINGLE"
-                        roomTypePrices.singlePrice = currencyPrice
+                    Select Case roomType
+                    
+                        Case "DOUBLE"
+                            roomTypePrices.twinPrice = currencyPrice
                         
-                    Case "TRIPLE"
-                        roomTypePrices.triplePrice = currencyPrice
+                        Case "SINGLE"
+                            roomTypePrices.singlePrice = currencyPrice
+                            
+                        Case "TRIPLE"
+                            roomTypePrices.triplePrice = currencyPrice
+                        
+                        Case "CHILD"
+                            roomTypePrices.childPrice = currencyPrice
                     
-                    Case "CHILD"
-                        roomTypePrices.childPrice = currencyPrice
+                    End Select
                 
-                End Select
+                Next k
+                
+                Set currencyPricesArray(j).roomTypePrices = roomTypePrices
+                
+            Next j
             
-            Next k
+            rbPricingDict.Add rateBandID, currencyPricesArray
             
-            Set currencyPricesArray(j).roomTypePrices = roomTypePrices
-            
-        Next j
-        
-        rbPricingDict.Add rateBandID, currencyPricesArray
-        
-        If Cells(i + 5, extensionColumnsDict("CODE")).Value <> tripCode Then
-            
-            catPricingDict.Add cat, rbPricingDict
-            Set rbPricingDict = New Scripting.Dictionary
-            extensionPricesDict.Add tripCode, catPricingDict
-            Set catPricingDict = New Scripting.Dictionary
-            
-        ElseIf Cells(i + 5, extensionColumnsDict("CATEGORY")).Value <> cat Then
-            
-            catPricingDict.Add cat, rbPricingDict
-            Set rbPricingDict = New Scripting.Dictionary
-            
+            If Cells(i + 5, extensionColumnsDict("CODE")).Value <> tripCode Then
+                
+                catPricingDict.Add cat, rbPricingDict
+                Set rbPricingDict = New Scripting.Dictionary
+                extensionPricesDict.Add tripCode, catPricingDict
+                Set catPricingDict = New Scripting.Dictionary
+                
+            ElseIf Cells(i + 5, extensionColumnsDict("CATEGORY")).Value <> cat Then
+                
+                catPricingDict.Add cat, rbPricingDict
+                Set rbPricingDict = New Scripting.Dictionary
+                
+            End If
+
         End If
     
         i = i + 5
@@ -566,7 +570,7 @@ Private Sub buildExtensionPricesDict()
     Loop
     
     
-    '********** For Debugging **********
+'********** For Debugging **********
 '    Debug.Print "buildExtensionPricesDict()"
 '    Dim tripKey As Variant, catKey As Variant, rbKey As Variant
 '    For Each tripKey In extensionPricesDict.Keys
