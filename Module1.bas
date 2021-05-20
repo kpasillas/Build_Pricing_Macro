@@ -405,7 +405,6 @@ Private Sub buildColumnsDict()
                     
                 Case "YTD " & currencyCodeArray(i)
                     columnsDict.Add "YTD " & currencyCodeArray(i), j
-                    Exit Do
             
             End Select
             
