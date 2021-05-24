@@ -6,6 +6,7 @@ Private originalCurrencyPrices_ As Variant
 Public extensionOffered As Boolean
 Public rateBandID As Long
 Private extensionCurrencyPrices_ As Scripting.Dictionary
+Private portTaxes_ As Scripting.Dictionary
 
 
 Public Property Let originalCurrencyPrices(Prices As Variant)
@@ -32,6 +33,14 @@ Public Property Get extensionCurrencyPrices() As Scripting.Dictionary
     Set extensionCurrencyPrices = extensionCurrencyPrices_
 End Property
 
+
+Public Property Let portTaxes(taxes As Scripting.Dictionary)
+    Set portTaxes_ = taxes
+End Property
+
+Public Property Get portTaxes() As Scripting.Dictionary
+    Set portTaxes = portTaxes_
+End Property
 
 
 '************************* For Debugging *************************

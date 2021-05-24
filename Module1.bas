@@ -243,8 +243,20 @@ Private Function getDeparturesWithoutExtensionCurrencyPrices(dateOffset As Long)
     
     Dim depArray() As New Departure
     ReDim depArray(departuresEndRow - departuresStartRow - 1)
+    Dim portTaxesDict As Scripting.Dictionary
     
-    Dim i As Long, j As Long
+    Dim currencyCodeArray(8) As String
+    currencyCodeArray(0) = "AUD"
+    currencyCodeArray(1) = "CAD"
+    currencyCodeArray(2) = "EUR"
+    currencyCodeArray(3) = "GBP"
+    currencyCodeArray(4) = "GET"
+    currencyCodeArray(5) = "NZD"
+    currencyCodeArray(6) = "SAR"
+    currencyCodeArray(7) = "SIN"
+    currencyCodeArray(8) = "USD"
+    
+    Dim i As Long, j As Long, k As Long
     For i = (departuresStartRow + 1) To departuresEndRow
         
         If (Cells(i, columnsDict("BUILD SUPPORT")).Value <> "") And (Not Cells(i, columnsDict("BUILD SUPPORT")).Value Like "No*") Then
@@ -258,6 +270,17 @@ Private Function getDeparturesWithoutExtensionCurrencyPrices(dateOffset As Long)
             depArray(j).code = Cells(i, 1).Value
             depArray(j).startDate = Cells(i, 2).Value
             depArray(j).originalCurrencyPrices = getLandOnlyCurrencyPrices(i)
+            
+            Set portTaxesDict = New Scripting.Dictionary
+            For k = 0 To (UBound(currencyCodeArray) - LBound(currencyCodeArray))
+                If columnsDict.Exists("BUILD PORT TAX " & currencyCodeArray(k)) Then
+                    portTaxesDict.Add currencyCodeArray(k), Cells(i, columnsDict("BUILD PORT TAX " & currencyCodeArray(k))).Value
+                Else
+                    portTaxesDict.Add currencyCodeArray(k), "0"
+                End If
+            Next k
+            
+            depArray(j).portTaxes = portTaxesDict
             
             If rateBandsDict.Count = 0 Then
                 depArray(j).rateBandID = 0
@@ -405,6 +428,9 @@ Private Sub buildColumnsDict()
                     
                 Case "YTD " & currencyCodeArray(i)
                     columnsDict.Add "YTD " & currencyCodeArray(i), j
+                    
+                Case "BUILD PORT TAX " & currencyCodeArray(i)
+                    columnsDict.Add "BUILD PORT TAX " & currencyCodeArray(i), j
             
             End Select
             
@@ -416,9 +442,16 @@ Private Sub buildColumnsDict()
     columnsDict.Add "SINGLE SUPP GET", columnsDict("SINGLE SUPP USD")
     columnsDict.Add "TRIPLE DISC GET", columnsDict("TRIPLE DISC USD")
     columnsDict.Add "YTD GET", columnsDict("YTD USD")
+    If columnsDict.Exists("BUILD PORT TAX USD") Then
+        columnsDict.Add "BUILD PORT TAX GET", columnsDict("BUILD PORT TAX USD")
+    End If
+    
     columnsDict.Add "SINGLE SUPP SIN", columnsDict("SINGLE SUPP USD")
     columnsDict.Add "TRIPLE DISC SIN", columnsDict("TRIPLE DISC USD")
     columnsDict.Add "YTD SIN", columnsDict("YTD USD")
+    If columnsDict.Exists("BUILD PORT TAX USD") Then
+        columnsDict.Add "BUILD PORT TAX SIN", columnsDict("BUILD PORT TAX USD")
+    End If
 
 
 '********** For Debugging **********
@@ -751,7 +784,7 @@ Private Sub exportToCSV()
 
     Dim sFilePath As String, tripNameFolderPath As String, duplicateFileExtension As String
     Dim fileNumber As Integer
-    Dim startDate As String, code As String, singlePrice As String, twinPrice As String, triplePrice As String, childPrice As String
+    Dim portTax As String, startDate As String, code As String, singlePrice As String, twinPrice As String, triplePrice As String, childPrice As String
     Dim productCodeAndSellingOfficeDict As New Scripting.Dictionary
     Dim i As Long, j As Long, k As Long, l As Long
     
@@ -777,7 +810,8 @@ Private Sub exportToCSV()
             
                     Write #fileNumber, "Product Code", productCodeAndSellingOfficeDict(Series.extensions(i).categories()(j).departures()(0).originalCurrencyPrices()(k).code)("Product Code"), "Selling Company", productCodeAndSellingOfficeDict(Series.extensions(i).categories()(j).departures()(0).originalCurrencyPrices()(k).code)("Selling Company"), "Default Room Type", "Twin"
                     Write #fileNumber,
-                    Write #fileNumber, "Teenager discount (absolute)", "0", "Food Fund", "0", "Port Taxes-Adult", "0", "Port Taxes-Child", "0"
+                    portTax = Series.extensions(i).categories()(j).departures()(0).portTaxes(Series.extensions(i).categories()(j).departures()(0).originalCurrencyPrices()(k).code)
+                    Write #fileNumber, "Teenager discount (absolute)", "0", "Food Fund", "0", "Port Taxes-Adult", portTax, "Port Taxes-Child", portTax
                     Write #fileNumber,
                     Write #fileNumber,
                     Write #fileNumber, "Start Date", "Season Name", "Single(S)", "Twin", "Triple(R)", "Quad(R)", "Child(R)"
