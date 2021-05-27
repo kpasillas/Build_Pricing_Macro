@@ -717,6 +717,7 @@ Private Function getDeparturesWithExtensionCurrencyPrices(extensionName As Varia
             depArray(j).extensionOffered = departures(i).extensionOffered
             depArray(j).rateBandID = departures(i).rateBandID
             depArray(j).originalCurrencyPrices = departures(i).originalCurrencyPrices
+            depArray(j).portTaxes = departures(i).portTaxes
             
             j = j + 1
             
