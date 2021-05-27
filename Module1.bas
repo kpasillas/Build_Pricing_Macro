@@ -784,7 +784,7 @@ Private Sub exportToCSV()
 
     Dim sFilePath As String, tripNameFolderPath As String, duplicateFileExtension As String
     Dim fileNumber As Integer
-    Dim portTax As String, startDate As String, code As String, singlePrice As String, twinPrice As String, triplePrice As String, childPrice As String
+    Dim stringToWrite As String, portTax As String, startDate As String, code As String, singlePrice As String, twinPrice As String, triplePrice As String, childPrice As String
     Dim productCodeAndSellingOfficeDict As New Scripting.Dictionary
     Dim i As Long, j As Long, k As Long, l As Long
     
@@ -808,13 +808,19 @@ Private Sub exportToCSV()
                     fileNumber = FreeFile
                     Open sFilePath For Output As #fileNumber
             
-                    Write #fileNumber, "Product Code", productCodeAndSellingOfficeDict(Series.extensions(i).categories()(j).departures()(0).originalCurrencyPrices()(k).code)("Product Code"), "Selling Company", productCodeAndSellingOfficeDict(Series.extensions(i).categories()(j).departures()(0).originalCurrencyPrices()(k).code)("Selling Company"), "Default Room Type", "Twin"
-                    Write #fileNumber,
+                    stringToWrite = "Product Code," & productCodeAndSellingOfficeDict(Series.extensions(i).categories()(j).departures()(0).originalCurrencyPrices()(k).code)("Product Code") & ",Selling Company," & productCodeAndSellingOfficeDict(Series.extensions(i).categories()(j).departures()(0).originalCurrencyPrices()(k).code)("Selling Company") & ",Default Room Type,Twin,,,,"
+                    Print #fileNumber, stringToWrite
+                    stringToWrite = ",,,,,,,,,"
+                    Print #fileNumber, stringToWrite
                     portTax = Series.extensions(i).categories()(j).departures()(0).portTaxes(Series.extensions(i).categories()(j).departures()(0).originalCurrencyPrices()(k).code)
-                    Write #fileNumber, "Teenager discount (absolute)", "0", "Food Fund", "0", "Port Taxes-Adult", portTax, "Port Taxes-Child", portTax
-                    Write #fileNumber,
-                    Write #fileNumber,
-                    Write #fileNumber, "Start Date", "Season Name", "Single(S)", "Twin", "Triple(R)", "Quad(R)", "Child(R)"
+                    stringToWrite = "Teenager discount (absolute),0,Food Fund,0,Port Taxes-Adult," & portTax & ",Port Taxes-Child," & portTax & ",,"
+                    Print #fileNumber, stringToWrite
+                    stringToWrite = ",,,,,,,,,"
+                    Print #fileNumber, stringToWrite
+                    stringToWrite = ",,,,,,,,,"
+                    Print #fileNumber, stringToWrite
+                    stringToWrite = "Start Date,Season Name,Single(S),Twin,Triple(R),Quad(R),Child(R),,,"
+                    Print #fileNumber, stringToWrite
                 
                     For l = 0 To (UBound(Series.extensions(i).categories()(j).departures()) - LBound(Series.extensions(i).categories()(j).departures()))
                 
@@ -850,7 +856,8 @@ Private Sub exportToCSV()
                         
                         End If
                         
-                        Write #fileNumber, startDate, code, singlePrice, twinPrice, triplePrice, "NA", childPrice
+                        stringToWrite = startDate & "," & code & "," & singlePrice & "," & twinPrice & "," & triplePrice & ",NA," & childPrice & ",,,"
+                        Print #fileNumber, stringToWrite
                         'Debug.Print "k: " & k, "l: " & l, startDate, code, singlePrice, twinPrice, triplePrice, "NA", childPrice
                         
                     Next l
