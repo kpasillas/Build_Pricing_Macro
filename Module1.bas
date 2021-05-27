@@ -274,7 +274,7 @@ Private Function getDeparturesWithoutExtensionCurrencyPrices(dateOffset As Long)
             Set portTaxesDict = New Scripting.Dictionary
             For k = 0 To (UBound(currencyCodeArray) - LBound(currencyCodeArray))
                 If columnsDict.Exists("BUILD PORT TAX " & currencyCodeArray(k)) Then
-                    portTaxesDict.Add currencyCodeArray(k), Cells(i, columnsDict("BUILD PORT TAX " & currencyCodeArray(k))).Value
+                    portTaxesDict.Add currencyCodeArray(k), CInt(Cells(i, columnsDict("BUILD PORT TAX " & currencyCodeArray(k))).Value)
                 Else
                     portTaxesDict.Add currencyCodeArray(k), "0"
                 End If
