@@ -805,7 +805,7 @@ Private Sub exportToCSV()
                 For k = 0 To (UBound(Series.extensions(i).categories()(j).departures()(0).originalCurrencyPrices()) - LBound(Series.extensions(i).categories()(j).departures()(0).originalCurrencyPrices()))
                     
                     'Debug.Print "i: " & i, "j: " & j, "Category Code: " & series.extensions(i).categories()(j).code, "Currency Code: " & series.extensions(i).categories()(j).departures()(0).originalCurrencyPrices()(k).code
-                    sFilePath = tripNameFolderPath & "\" & Series.extensions(i).categories()(j).code & "\" & Series.extensions(i).categories()(j).departures()(0).originalCurrencyPrices()(k).code & ".csv"
+                    sFilePath = tripNameFolderPath & "\" & Series.extensions(i).categories()(j).code & "\" & Series.extensions(i).categories()(j).code & " - " & Series.extensions(i).categories()(j).departures()(0).originalCurrencyPrices()(k).code & ".csv"
                     fileNumber = FreeFile
                     Open sFilePath For Output As #fileNumber
             
