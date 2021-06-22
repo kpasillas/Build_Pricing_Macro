@@ -35,7 +35,7 @@ Sub buildPricingMacro()
             Dim ws As Worksheet
             For Each ws In ActiveWorkbook.Worksheets
                 
-                If ws.name Like "*PRC" Then
+                If ws.name Like "*PRC" And ws.Visible Then
                 
                     Set currentWorksheet = ws
                     buildSeries
